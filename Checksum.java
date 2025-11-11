@@ -1,52 +1,59 @@
 import java.util.*;
 
-public class Checksum {
-    static int addAndWrap(int a, int b) {
-        int s = a + b;
-        while (s > 255) s = (s & 255) + (s >> 8);
-        return s;
-    }
-
-    static String checksum(String[] data) {
+public class ChecksumMethodInteractive {
+    static String calcChecksum(String[] data) {
         int sum = 0;
-        for (String s : data) sum = addAndWrap(sum, Integer.parseInt(s, 2));
-        int cs = ~sum & 255;
-        return String.format("%8s", Integer.toBinaryString(cs)).replace(' ', '0');
-    }
-
-    static boolean verify(String[] data) {
-        int sum = 0;
-        for (String s : data) sum = addAndWrap(sum, Integer.parseInt(s, 2));
-        System.out.println("Final 8-bit sum: " + String.format("%8s",
-                Integer.toBinaryString(sum)).replace(' ', '0'));
-        return sum == 255;
-    }
-
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        System.out.println("8-bit One's Complement Checksum Program");
-        System.out.print("No. of data segments: ");
-        int n = sc.nextInt();
-        String[] d = new String[n];
-        for (int i = 0; i < n; i++) {
-            System.out.print("Enter 8-bit data " + (i + 1) + ": ");
-            d[i] = sc.next();
+        for (String s : data) {
+            sum += Integer.parseInt(s, 2);
+            while (sum > 0xFF) sum = (sum & 0xFF) + (sum >> 8);
         }
-        String cs = checksum(d);
-        System.out.println("Calculated Checksum: " + cs);
-        String[] all = Arrays.copyOf(d, n + 1);
-        all[n] = cs;
-        System.out.println("Sender Verification: " + verify(all));
-        System.out.print("Verify at receiver? (y/n): ");
+        int chk = (~sum) & 0xFF;
+        return String.format("%8s", Integer.toBinaryString(chk)).replace(' ', '0');
+    }
+
+    static boolean verify(String[] segs) {
+        int sum = 0;
+        for (String s : segs) {
+            sum += Integer.parseInt(s, 2);
+            while (sum > 0xFF) sum = (sum & 0xFF) + (sum >> 8);
+        }
+        return sum == 0xFF;
+    }
+
+    static boolean valid(String s) {
+        return s.matches("[01]{8}");
+    }
+
+    public static void main(String[] a) {
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Enter number of 8-bit segments: ");
+        int n = sc.nextInt();
+        String[] data = new String[n];
+        for (int i = 0; i < n; i++) {
+            do {
+                System.out.print("Segment " + (i + 1) + ": ");
+                data[i] = sc.next();
+            } while (!valid(data[i]));
+        }
+        String chk = calcChecksum(data);
+        System.out.println("\nChecksum: " + chk);
+        String[] recv = Arrays.copyOf(data, n + 1);
+        recv[n] = chk;
+        System.out.println("Verification (auto): " + verify(recv));
+        System.out.print("\nVerify custom set? (y/n): ");
         if (sc.next().equalsIgnoreCase("y")) {
-            System.out.print("Enter number of received segments: ");
+            System.out.print("How many segments: ");
             int m = sc.nextInt();
             String[] r = new String[m];
             for (int i = 0; i < m; i++) {
-                System.out.print("Received segment " + (i + 1) + ": ");
-                r[i] = sc.next();
+                do {
+                    System.out.print("Segment " + (i + 1) + ": ");
+                    r[i] = sc.next();
+                } while (!valid(r[i]));
             }
-            System.out.println("Receiver Verification: " + verify(r));
+            System.out.println("Verification result: " + verify(r));
         }
+        sc.close();
+        System.out.println("Done.");
     }
 }
